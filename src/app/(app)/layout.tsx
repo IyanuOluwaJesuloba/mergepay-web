@@ -5,6 +5,7 @@ import { AppShell } from "../../components/app-shell";
 import { AuthGuard } from "../../components/auth-guard";
 import { WalletErrorBoundary } from "../../components/wallet/WalletErrorBoundary";
 import { ErrorBoundary } from "../../components/ui/ErrorBoundary";
+import { MutationSyncIndicator } from "../../components/ui/MutationSyncIndicator";
 import { useSessionRestore } from "../../hooks/useSessionRestore";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -27,6 +28,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <AppShell>
             <ErrorBoundary>{children}</ErrorBoundary>
           </AppShell>
+          {/* Non-blocking indicator shown while any mutation is in-flight,
+              e.g. optimistic expense creation or deletion (#375). */}
+          <MutationSyncIndicator />
         </AuthGuard>
       </ErrorBoundary>
     </WalletErrorBoundary>

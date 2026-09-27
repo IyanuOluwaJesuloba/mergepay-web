@@ -45,7 +45,7 @@ import {
   createOptimisticExpenseEvent,
   calculateOptimisticActivityList,
 } from "./activity";
-import { buildOptimisticExpense, insertOptimisticExpense } from "./optimistic";
+import { buildOptimisticExpense, insertOptimisticExpense, removeOptimisticExpense } from "./optimistic";
 
 export const qk = {
   me: ["me"] as const,
@@ -760,10 +760,52 @@ export function useGroupActivity(groupId: string) {
 }
 
 export function useDeleteExpense(groupId: string) {
+  const qc = useQueryClient();
   const invalidate = useInvalidator();
+
   return useMutation({
     mutationFn: (expenseId: string) => api.deleteExpense(expenseId),
-    onSuccess: () => invalidate(expenseCacheKeys(groupId)),
+
+    onMutate: async (expenseId: string) => {
+      const expensesKey = qk.expenses(groupId);
+      const activityKey = qk.activity(groupId);
+
+      // Cancel in-flight refetches so they don't overwrite the removal.
+      await Promise.all([
+        qc.cancelQueries({ queryKey: expensesKey }),
+        qc.cancelQueries({ queryKey: activityKey }),
+      ]);
+
+      // Snapshot everything we touch so onError can roll back cleanly.
+      const previousExpenses = qc.getQueriesData({ queryKey: expensesKey });
+      const previousActivity = qc.getQueryData<GroupActivityResponse>(activityKey);
+
+      // Remove the expense from every cache entry that holds it (flat +
+      // infinite variants handled by removeOptimisticExpense).
+      qc.setQueriesData({ queryKey: expensesKey }, (old: unknown) =>
+        removeOptimisticExpense(old, expenseId)
+      );
+
+      return { previousExpenses, previousActivity };
+    },
+
+    onError: (_err, _expenseId, context) => {
+      // Put every cache entry back the way it was.
+      if (context?.previousExpenses) {
+        for (const [queryKey, queryData] of context.previousExpenses) {
+          qc.setQueryData(queryKey, queryData);
+        }
+      }
+      if (context?.previousActivity) {
+        qc.setQueryData(qk.activity(groupId), context.previousActivity);
+      }
+    },
+
+    onSettled: () => {
+      // Whether it succeeded or failed, let the server's view win.
+      invalidate(expenseCacheKeys(groupId));
+      qc.invalidateQueries({ queryKey: qk.activity(groupId) });
+    },
   });
 }
 
