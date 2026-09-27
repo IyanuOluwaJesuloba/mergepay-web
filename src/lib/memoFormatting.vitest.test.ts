@@ -35,12 +35,12 @@ import {
   stellarTextMemoSchema,
   validateMemo,
   validateShortCode,
-} from "../memoValidation";
+} from "./memoValidation";
 import {
   isValidMergepayMemo,
   MERGEPAY_MEMO_REGEX,
   verifyTransactionMemo,
-} from "../memo";
+} from "./memo";
 
 // ---------------------------------------------------------------------------
 // 1. Memo string generation — buildSettlementMemo
