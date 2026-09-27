@@ -272,10 +272,12 @@ export function AddExpenseDialog({
         receiptUrl,
       });
       clearDraft();
-      toast.success("Expense added successfully");
+      // Success toast is fired by the useCreateExpense hook's onSuccess handler.
       onClose();
     } catch (err) {
-      const msg = handleApiError(err, "Could not create expense");
+      // The hook's onError already toasted; extract the message silently so
+      // we can render it inline without showing a second toast.
+      const msg = handleApiError(err, "Could not create expense", { silent: true });
       setSubmitError(msg);
     } finally {
       setSubmitting(false);

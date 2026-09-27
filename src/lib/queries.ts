@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-query";
 import { api, getInviteByCode } from "./api";
 import { handleApiError } from "./errorHandler";
+import { toast } from "sonner";
 import { useAuth } from "./auth-store";
 import type {
   BalancesResponse,
@@ -741,6 +742,13 @@ export function useCreateExpense(groupId: string) {
         qc.setQueryData(qk.activity(groupId), context.previousActivity);
       }
       handleApiError(err, "Failed to create expense. Balances and activity reverted.");
+    },
+    // Confirm the expense landed on the server and notify the user.
+    onSuccess: () => {
+      toast.success("Expense added successfully");
+      // Keep the transaction history in sync alongside the group list so
+      // the history page reflects the new expense without a manual refresh.
+      qc.invalidateQueries({ queryKey: qk.history });
     },
     // Refetch canonical data on settlement (success or error) so the list,
     // balances, ledger, and activity feed reflect the server's view.
