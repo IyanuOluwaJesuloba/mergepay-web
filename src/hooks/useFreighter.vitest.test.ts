@@ -74,7 +74,7 @@ describe("useFreighter Hook (#283)", () => {
     });
 
     expect(stellar.connectWallet).toHaveBeenCalledTimes(1);
-    expect(toast.error).toHaveBeenCalledWith("You cancelled the request. No transaction was submitted.");
+    expect(toast.warning).toHaveBeenCalledWith("You cancelled the request. No transaction was submitted.", { duration: 5000 });
   });
 
   it("executes custom wallet action with success toast", async () => {

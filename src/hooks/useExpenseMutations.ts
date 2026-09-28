@@ -35,6 +35,7 @@ import {
   applyOptimisticSettlement,
   buildOptimisticExpense,
   insertOptimisticExpense,
+  removeOptimisticExpense,
 } from "@/lib/optimistic";
 import type {
   BalancesResponse,
@@ -231,6 +232,58 @@ export function useSettleBalanceMutation(groupId: string) {
       qc.invalidateQueries({ queryKey: qk.balances(groupId) });
       qc.invalidateQueries({ queryKey: qk.activity(groupId) });
       qc.invalidateQueries({ queryKey: qk.history });
+    },
+  });
+}
+
+export function useDeleteExpenseMutation(groupId: string) {
+  const qc = useQueryClient();
+  const invalidate = useInvalidator();
+
+  return useMutation({
+    mutationFn: (expenseId: string): Promise<{ ok: boolean }> =>
+      api.deleteExpense(expenseId),
+
+    onMutate: async (expenseId: string) => {
+      const keys = expenseWriteKeys(groupId);
+
+      // Stop any in-flight refetch from clobbering the removal.
+      await Promise.all(keys.map((queryKey) => qc.cancelQueries({ queryKey })));
+
+      const previousExpenses = qc.getQueriesData({ queryKey: qk.expenses(groupId) });
+      const previousActivity = qc.getQueryData<GroupActivityResponse>(qk.activity(groupId));
+
+      // Remove the expense from both flat and infinite cache shapes
+      // immediately so the card disappears before the network responds.
+      qc.setQueriesData({ queryKey: qk.expenses(groupId) }, (old: unknown) =>
+        removeOptimisticExpense(old, expenseId)
+      );
+
+      return { previousExpenses, previousActivity };
+    },
+
+    onError: (_err, _expenseId, context) => {
+      // Restore every entry we emptied.
+      if (context?.previousExpenses) {
+        for (const [queryKey, queryData] of context.previousExpenses) {
+          qc.setQueryData(queryKey, queryData);
+        }
+      }
+      if (context?.previousActivity) {
+        qc.setQueryData(qk.activity(groupId), context.previousActivity);
+      }
+      toast.error("Could not delete expense. It has been restored.");
+    },
+
+    onSuccess: () => {
+      toast.success("Expense deleted");
+      qc.invalidateQueries({ queryKey: qk.history });
+    },
+
+    onSettled: () => {
+      // Always reconcile with the server's list.
+      invalidate(expenseCacheKeys(groupId));
+      qc.invalidateQueries({ queryKey: qk.activity(groupId) });
     },
   });
 }

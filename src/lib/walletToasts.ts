@@ -65,5 +65,10 @@ export function showWalletErrorToast(code: WalletErrorCode, message: string): vo
     toast.error(message, options);
     return;
   }
+  // User rejection is a distinct, non-blocking warning rather than an error
+  if (code === "user_rejected") {
+    toast.warning(message, { duration: 5000 });
+    return;
+  }
   toast.error(message);
 }
