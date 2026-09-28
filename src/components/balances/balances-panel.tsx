@@ -20,6 +20,7 @@ import { simplifyDebts } from "@/lib/settlementUtils";
 
 import { AssetSwitcher } from "@/components/AssetSwitcher";
 import { useAssetStore } from "@/lib/asset-store";
+import { MultiCurrencyBalanceSummary } from "@/components/groups/MultiCurrencyBalanceSummary";
 
 export function BalancesPanel({
   groupId,
@@ -73,6 +74,11 @@ export function BalancesPanel({
   return (
     <div className="space-y-6">
       <AssetSwitcher />
+
+      <MultiCurrencyBalanceSummary
+        balances={balances}
+        userId={currentUserId}
+      />
 
       <div>
         <h3 className="mb-3 font-display text-sm uppercase tracking-widest text-ink/60">

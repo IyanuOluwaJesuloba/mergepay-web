@@ -12,11 +12,20 @@ import {
   breakdownMemo,
   detectMemoDeviations,
   generateShortCode,
+  sanitizeMemoInput,
+  parseSettlementMemo,
+  extractExpenseReferenceFromMemo,
+  extractSettlementFromTransactionPayload,
+  stellarTextMemoSchema,
+  mergepaySettlementMemoSchema,
   STELLAR_MEMO_MAX_BYTES,
   PREFIX_BYTES,
   MAX_SHORT_CODE_BYTES,
   type MemoValidationResult,
   type MemoBreakdown,
+  type ParsedSettlementMemo,
+  type ExtractedExpenseReference,
+  type ExtractedTransactionSettlement,
 } from "./memoValidation";
 import { SETTLEMENT_MEMO_PREFIX } from "./constants";
 
@@ -27,12 +36,21 @@ export {
   breakdownMemo,
   detectMemoDeviations,
   generateShortCode,
+  sanitizeMemoInput,
+  parseSettlementMemo,
+  extractExpenseReferenceFromMemo,
+  extractSettlementFromTransactionPayload,
+  stellarTextMemoSchema,
+  mergepaySettlementMemoSchema,
   STELLAR_MEMO_MAX_BYTES,
   PREFIX_BYTES,
   MAX_SHORT_CODE_BYTES,
   SETTLEMENT_MEMO_PREFIX,
   type MemoValidationResult,
   type MemoBreakdown,
+  type ParsedSettlementMemo,
+  type ExtractedExpenseReference,
+  type ExtractedTransactionSettlement,
 };
 
 /** Memo verification status breakdown for UI warning banners. */

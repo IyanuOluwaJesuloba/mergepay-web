@@ -21,8 +21,11 @@ import { countActiveExpenseFilters, filterExpenses, type ExpenseFilterValues } f
 import { formatTimestamp } from "@/lib/datetime";
 import type { Expense } from "@/lib/types";
 
+import { SkeletonBoundary, ExpenseListSkeleton } from "../ui/skeleton";
+
 export interface ExpenseListProps {
   expenses: Expense[];
+  isPending?: boolean;
   className?: string;
   /** Controlled filter values. Omit to let the list manage its own. */
   filters?: ExpenseFilterValues;
@@ -56,6 +59,7 @@ export function ExpenseList({
   onFiltersChange,
   hideFilterBar = false,
   renderExpense,
+  isPending = false,
 }: ExpenseListProps) {
   const [ownFilters, setOwnFilters] = useState<ExpenseFilterValues>({});
   const filters = controlledFilters ?? ownFilters;
@@ -69,7 +73,7 @@ export function ExpenseList({
   const assetCodes = useMemo(() => [...new Set(all.map((e) => e.assetCode))].sort(), [all]);
   const filtering = countActiveExpenseFilters(filters) > 0;
 
-  if (all.length === 0) {
+  if (all.length === 0 && !isPending) {
     return (
       <EmptyState
         className={className}
@@ -96,30 +100,32 @@ export function ExpenseList({
         />
       )}
 
-      {filtering && (
-        <p className="text-xs font-bold text-ink/60" role="status" aria-live="polite">
-          Showing {visible.length} of {all.length} expense{all.length === 1 ? "" : "s"}
-        </p>
-      )}
+      <SkeletonBoundary isPending={isPending} skeleton={<ExpenseListSkeleton rows={3} />}>
+        {filtering && (
+          <p className="text-xs font-bold text-ink/60" role="status" aria-live="polite">
+            Showing {visible.length} of {all.length} expense{all.length === 1 ? "" : "s"}
+          </p>
+        )}
 
-      {visible.length === 0 ? (
-        <EmptyState
-          icon={<SearchX className="h-7 w-7" aria-hidden="true" />}
-          title="No matching expenses"
-          description="Nothing matches these filters. Try a different keyword, currency, status, or date range."
-          action={
-            <Button variant="outline" size="sm" onClick={() => setFilters({})}>
-              Clear filters
-            </Button>
-          }
-        />
-      ) : (
-        <ul className="space-y-3">
-          {visible.map((expense) => (
-            <li key={expense.id}>{renderExpense ? renderExpense(expense) : <DefaultExpenseRow expense={expense} />}</li>
-          ))}
-        </ul>
-      )}
+        {visible.length === 0 ? (
+          <EmptyState
+            icon={<SearchX className="h-7 w-7" aria-hidden="true" />}
+            title="No matching expenses"
+            description="Nothing matches these filters. Try a different keyword, currency, status, or date range."
+            action={
+              <Button variant="outline" size="sm" onClick={() => setFilters({})}>
+                Clear filters
+              </Button>
+            }
+          />
+        ) : (
+          <ul className="space-y-3">
+            {visible.map((expense) => (
+              <li key={expense.id}>{renderExpense ? renderExpense(expense) : <DefaultExpenseRow expense={expense} />}</li>
+            ))}
+          </ul>
+        )}
+      </SkeletonBoundary>
     </div>
   );
 }

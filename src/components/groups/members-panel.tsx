@@ -2,14 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Archive, LogOut, UserPlus, UserMinus, Shield, ShieldCheck, Eye } from "lucide-react";
+import { Archive, LogOut, UserPlus, UserMinus, Shield, ShieldCheck, Eye, QrCode } from "lucide-react";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { PubkeyChip } from "@/components/tx-link";
+import { Dialog } from "@/components/ui/dialog";
 import { InviteMemberModal } from "./InviteMemberModal";
+import { useCreateInvite } from "@/lib/queries";
+import { describeInviteFailure, isSafeInviteUrl } from "@/lib/inviteLink";
+import { QRCodeSVG } from "qrcode.react";
 import {
   useArchiveGroup,
   useLeaveGroup,
@@ -29,11 +33,27 @@ export function MembersPanel({
 }) {
   const router = useRouter();
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
+  const [invite, setInvite] = useState<{ code: string; url: string } | null>(null);
   const archive = useArchiveGroup(detail.group.id);
   const leave = useLeaveGroup(detail.group.id);
   const updateRole = useUpdateMemberRole(detail.group.id);
   const removeMember = useRemoveMember(detail.group.id);
+  const createInvite = useCreateInvite(detail.group.id);
   const isAdmin = detail.yourRole === "admin";
+
+  async function generateInvite() {
+    try {
+      const { invite: created } = await createInvite.mutateAsync({});
+      const shareUrl = isSafeInviteUrl(created.url) ? created.url : null;
+      if (shareUrl) {
+        setInvite({ code: created.code, url: shareUrl });
+        setQrOpen(true);
+      }
+    } catch (e) {
+      toast.error(describeInviteFailure(e).description);
+    }
+  }
 
   async function handleArchive() {
     if (!confirm("Archive this group? Members keep read access to the ledger.")) return;
@@ -81,13 +101,18 @@ export function MembersPanel({
         <h3 className="font-display text-sm uppercase tracking-widest text-ink/60">
           {detail.members.length} member{detail.members.length === 1 ? "" : "s"}
         </h3>
-        {isAdmin ? (
-          <Button size="sm" onClick={() => setInviteOpen(true)}>
-            <UserPlus className="h-4 w-4" /> Invite
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => void generateInvite()} loading={createInvite.isPending}>
+            <QrCode className="h-4 w-4" /> QR Code
           </Button>
-        ) : (
-          <Badge tone="paper">Members</Badge>
-        )}
+          {isAdmin ? (
+            <Button size="sm" onClick={() => setInviteOpen(true)}>
+              <UserPlus className="h-4 w-4" /> Invite
+            </Button>
+          ) : (
+            <Badge tone="paper">Members</Badge>
+          )}
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -165,6 +190,41 @@ export function MembersPanel({
         groupId={detail.group.id}
         groupName={detail.group.name}
       />
+
+      <Dialog
+        open={qrOpen}
+        onClose={() => setQrOpen(false)}
+        title="Group Invite QR Code"
+        description="Share this QR code to let others join this group instantly"
+      >
+        {invite && (
+          <div className="flex flex-col items-center space-y-4">
+            <div className="rounded-2xl border-3 border-ink bg-white p-4 shadow-brutal">
+              <QRCodeSVG value={invite.url} size={200} fgColor="#18130E" bgColor="#FFFFFF" level="M" />
+            </div>
+            <div className="w-full space-y-1.5">
+              <label className="font-display text-xs uppercase tracking-widest text-ink/70">
+                Invite code
+              </label>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 rounded-xl border-2 border-ink bg-paper px-3 py-2 font-mono text-xs select-all">
+                  {invite.code}
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    navigator.clipboard.writeText(invite.code);
+                    toast.success("Invite code copied");
+                  }}
+                >
+                  Copy
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </Dialog>
     </div>
   );
 }

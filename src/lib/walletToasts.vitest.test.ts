@@ -85,8 +85,9 @@ describe("showWalletErrorToast", () => {
   it("passes a plain message through untouched when nothing needs adding", () => {
     showWalletErrorToast("user_rejected", "You cancelled the request.");
 
-    expect(toast.error).toHaveBeenCalledWith(
-      "You cancelled the request."
+    expect(toast.warning).toHaveBeenCalledWith(
+      "You cancelled the request.",
+      { duration: 5000 }
     );
   });
 });

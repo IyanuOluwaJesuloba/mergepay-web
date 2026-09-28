@@ -151,6 +151,14 @@ export function GroupHeaderSkeleton({ className }: { className?: string }) {
   );
 }
 
+export function ExpenseListSkeleton({ rows = 3 }: { rows?: number }) {
+  return <ListSkeleton rows={rows} variant="expense" />;
+}
+
+export function BalanceListSkeleton({ rows = 3 }: { rows?: number }) {
+  return <ListSkeleton rows={rows} variant="balance" />;
+}
+
 export function ListSkeleton({ rows = 3, variant = "card" }: { rows?: number; variant?: "card" | "expense" | "balance" | "settlement" }) {
   const Item = variant === "expense" ? ExpenseCardSkeleton : variant === "balance" ? BalanceCardSkeleton : variant === "settlement" ? SettlementPathSkeleton : CardSkeleton;
   return (

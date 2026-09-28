@@ -13,9 +13,11 @@ import type { AnchorInfo } from "./types";
 /** Whether an anchor advertises support for the given asset code. */
 export function anchorSupportsAsset(
   anchor: AnchorInfo,
-  assetCode: string
+  assetCode: string | null | undefined
 ): boolean {
+  if (!assetCode || typeof assetCode !== "string") return false;
   const wanted = assetCode.trim().toUpperCase();
+  if (!wanted) return false;
   return anchor.assets.some(
     (asset) => asset.code.trim().toUpperCase() === wanted
   );
